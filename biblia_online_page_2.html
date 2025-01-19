@@ -1,0 +1,200 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bíblia Online</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f7f7f7;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        #header {
+            background-color: #4CAF50;
+            color: white;
+            padding: 20px;
+            width: 100%;
+            text-align: center;
+            font-size: 24px;
+        }
+
+        #botao-container {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+            width: 100%;
+            padding: 10px;
+        }
+
+        .quadradinho {
+            background-color: #fff;
+            padding: 15px;
+            margin: 5px;
+            cursor: pointer;
+            border-radius: 8px;
+            box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+            transition: background-color 0.3s, transform 0.3s;
+        }
+
+        .quadradinho:hover {
+            background-color: #e0e0e0;
+            transform: scale(1.05);
+        }
+
+        .livros-container, .capitulos-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-top: 20px;
+            padding: 10px;
+            width: 80%;
+            overflow-y: auto; /* Adicionando rolagem manual */
+            max-height: 300px; /* Limita a altura para rolagem */
+        }
+
+        .livro, .capitulo {
+            background-color: #fff;
+            margin: 5px;
+            padding: 10px;
+            text-align: center;
+            border-radius: 8px;
+            cursor: pointer;
+            box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+            width: 120px;
+            transition: background-color 0.3s, transform 0.3s;
+        }
+
+        .livro:hover, .capitulo:hover {
+            background-color: #e0e0e0;
+            transform: scale(1.05);
+        }
+
+        .versiculo-conteudo {
+            margin-top: 20px;
+            font-size: 18px;
+            padding: 20px;
+            background-color: #fff;
+            width: 80%;
+            box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            display: none;
+            text-align: center;
+        }
+
+        .versiculo-conteudo span {
+            font-weight: bold;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div id="header">Bíblia Online</div>
+
+    <div id="botao-container">
+        <div id="velho-testamento" class="quadradinho">Velho Testamento</div>
+        <div id="novo-testamento" class="quadradinho">Novo Testamento</div>
+    </div>
+
+    <div id="livros-velho-testamento" class="livros-container"></div>
+    <div id="livros-novo-testamento" class="livros-container"></div>
+
+    <div id="capitulos-container" class="capitulos-container"></div>
+    
+    <div id="versiculo-conteudo" class="versiculo-conteudo"></div>
+
+    <script>
+        const apiBaseUrl = "https://bible-api.com"; // API para os versículos
+
+        // Dados fixos para livros e capítulos
+        const livrosECapitulos = {
+            "Velho Testamento": {
+                "Gênesis": 50, "Êxodo": 40, "Levítico": 27, "Números": 36, "Deuteronômio": 34,
+                "Josué": 24, "Juízes": 21, "Rute": 4, "1 Samuel": 31, "2 Samuel": 24,
+                "1 Reis": 22, "2 Reis": 25, "1 Crônicas": 29, "2 Crônicas": 36, "Esdras": 10,
+                "Neemias": 13, "Ester": 10, "Jó": 42, "Salmos": 150, "Provérbios": 31,
+                "Isaías": 66, "Jeremias": 52, "Lamentações": 5, "Ezequiel": 48, "Daniel": 12
+            },
+            "Novo Testamento": {
+                "Mateus": 28, "Marcos": 16, "Lucas": 24, "João": 21, "Atos": 28,
+                "Romanos": 16, "1 Coríntios": 16, "2 Coríntios": 13, "Gálatas": 6, "Filipenses": 4,
+                "Colossenses": 4, "1 Tessalonicenses": 5, "2 Tessalonicenses": 3, "1 Timóteo": 6,
+                "2 Timóteo": 4, "Tito": 3, "Filemom": 1, "Hebreus": 13, "Tiago": 5, "1 Pedro": 5,
+                "2 Pedro": 3, "1 João": 5, "2 João": 1, "3 João": 1, "Judas": 1, "Apocalipse": 22
+            }
+        };
+
+        const velhoTestamento = document.getElementById("velho-testamento");
+        const novoTestamento = document.getElementById("novo-testamento");
+        const livrosVelho = document.getElementById("livros-velho-testamento");
+        const livrosNovo = document.getElementById("livros-novo-testamento");
+        const capitulosContainer = document.getElementById("capitulos-container");
+        const versiculoConteudo = document.getElementById("versiculo-conteudo");
+
+        // Função para exibir os livros de um testamento específico
+        function exibirLivros(testamento, container, livros) {
+            container.innerHTML = "";
+            capitulosContainer.style.display = "none";
+            versiculoConteudo.style.display = "none";
+            livros.forEach(livro => {
+                const livroDiv = document.createElement("div");
+                livroDiv.textContent = livro;
+                livroDiv.classList.add("livro");
+                livroDiv.onclick = () => exibirCapitulos(livro, testamento);
+                container.appendChild(livroDiv);
+            });
+            container.style.display = "flex";
+        }
+
+        // Função para exibir os capítulos do livro selecionado
+        function exibirCapitulos(livro, testamento) {
+            const totalCapitulos = livrosECapitulos[testamento][livro];
+            capitulosContainer.innerHTML = `<strong>Capítulos de ${livro}:</strong>`;
+            for (let i = 1; i <= totalCapitulos; i++) {
+                const capituloDiv = document.createElement("div");
+                capituloDiv.textContent = `Capítulo ${i}`;
+                capituloDiv.classList.add("capitulo");
+                capituloDiv.onclick = () => exibirVersiculos(livro, i, testamento);
+                capitulosContainer.appendChild(capituloDiv);
+            }
+            capitulosContainer.style.display = "flex";
+        }
+
+        // Função para exibir os versículos do capítulo selecionado
+        function exibirVersiculos(livro, capitulo, testamento) {
+            fetch(`${apiBaseUrl}/${livro} ${capitulo}?translation=almeida`)
+                .then(response => response.json())
+                .then(data => {
+                    versiculoConteudo.style.display = "block";
+                    versiculoConteudo.innerHTML = `<strong>Versículos de ${livro} ${capitulo}:</strong><br><br>`;
+                    data.verses.forEach(versiculo => {
+                        const versiculoDiv = document.createElement("div");
+                        versiculoDiv.classList.add("versiculo");
+                        versiculoDiv.innerHTML = `<span>${versiculo.verse}</span>: ${versiculo.text}`;
+                        versiculoConteudo.appendChild(versiculoDiv);
+                    });
+                })
+                .catch(error => console.error("Erro ao carregar os versículos:", error));
+        }
+
+        // Eventos de clique nos testamentos
+        velhoTestamento.addEventListener("click", () => {
+            livrosNovo.style.display = "none"; // Oculta livros do Novo Testamento
+            exibirLivros("Velho Testamento", livrosVelho, Object.keys(livrosECapitulos["Velho Testamento"]));
+        });
+
+        novoTestamento.addEventListener("click", () => {
+            livrosVelho.style.display = "none"; // Oculta livros do Velho Testamento
+            exibirLivros("Novo Testamento", livrosNovo, Object.keys(livrosECapitulos["Novo Testamento"]));
+        });
+    </script>
+
+</body>
+</html>
